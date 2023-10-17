@@ -98,6 +98,11 @@ extern void lwp_exit(int status)
 }
 extern tid_t lwp_gettid(void)
 {
+    if (current_thread != NULL)
+    {
+        return current_thread->tid;
+    }
+    return NO_THREAD;
 }
 extern void lwp_yield(void)
 {
