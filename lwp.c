@@ -3,7 +3,7 @@
 
 scheduler current_scheduler  = NULL;
 tid_t thread_counter = NO_THREAD;
-tid_t current_thread = NO_THREAD;
+thread current_thread = NULL;
 void* initial_stack = NULL;
 
 // 8MB stack size, assuming MB is 1024^2
@@ -101,6 +101,32 @@ extern tid_t lwp_gettid(void)
 }
 extern void lwp_yield(void)
 {
+    // Get new thread to run
+    thread next_thread = current_scheduler->next();
+
+    // If there is no new thread to run, exit with exit status
+    if (next_thread == NULL)
+    {
+        // Get exit status and clean up
+        unsigned int exit_status = current_thread->status;
+        
+        // Don't need to free stack since we didn't allocate for original, may need to free other fields if they require allocated memory that is not freed elsewhere
+        free(current_thread);
+
+        // Clean up for scheduler? If defined use shutdown
+        if (current_scheduler->shutdown != NULL)
+        {
+            current_scheduler->shutdown();
+        }
+
+        // Exit with retrieved exit status
+        exit(exit_status);
+    }
+
+    // Context switch
+    swap_rfiles(&current_thread->state, &next_thread->state);
+    current_thread = next_thread;
+
 }
 extern void lwp_start(void)
 {
@@ -113,6 +139,7 @@ extern void lwp_start(void)
     }
 
     // Set the context for thread, already have a stack so new_thread->stack should be NULL
+    current_thread = new_thread;
     thread_counter++;
     new_thread->tid = thread_counter;
     new_thread->stack = NULL;
