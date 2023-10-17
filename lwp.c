@@ -106,10 +106,10 @@ extern void lwp_start(void)
 {
     //Initialize new thread struct for LWP
     thread new_thread = (thread)malloc(sizeof(context));
-    if (new_thread == NULL) 
+    if (new_thread == NULL)
     {
         perror("malloc");
-        return NO_THREAD;
+        exit(EXIT_FAILURE);
     }
 
     // Set the context for thread, already have a stack so new_thread->stack should be NULL
@@ -119,13 +119,10 @@ extern void lwp_start(void)
     new_thread->status = LWP_LIVE;
 
     // Admit to scheduler
-    current_scheduler.admit(new_thread);
+    current_scheduler->admit(new_thread);
 
-    // Get next thread to run
-    thread* next = current_scheduler.next();
-    
-    // Yield to thread
-    lwp_yield(next);
+    // Yield to next thread
+    lwp_yield();
 }
 extern tid_t lwp_wait(int * tid)
 {
