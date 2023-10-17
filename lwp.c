@@ -83,7 +83,7 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
     unsigned long * stack_bottom = new_thread->stack + new_thread->stacksize;
     new_thread->state.rbp = (unsigned long)stack_bottom;
 
-    // Put the pointer to wrap and then base pointer on stack
+    // Put the pointer to wrap and base pointer on stack
     *(stack_bottom - 8) = (unsigned long)lwp_wrap;
     *(stack_bottom - 16) = new_thread->state.rbp;
 
