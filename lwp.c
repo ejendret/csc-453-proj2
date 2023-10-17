@@ -50,7 +50,7 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
     {
         if (stacksize_rl.rlim_cur != RLIM_INFINITY)
         {
-            howbig = rlim.rlim_cur;
+            howbig = stacksize_rl.rlim_cur;
         }
     }
 
@@ -74,20 +74,18 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
     thread_counter++;
     new_thread->tid = thread_counter;
     new_thread->stacksize = howbig;
-    new_thread->state.rdi = fun; // arg 1 of lwp_wrap
-    new_thread->state.rsi = arg; // arg2 of lwp_wrap
+    new_thread->state.rdi = (unsigned long)fun; // arg 1 of lwp_wrap
+    new_thread->state.rsi = (unsigned long)arg; // arg2 of lwp_wrap
     new_thread->state.fxsave = FPU_INIT; 
     new_thread->status = LWP_LIVE;
 
     // Get stack bottom, set the base pointer to this, this is our "old" base pointer
-    new_thread->state.rbp = new_thread->stack + new_thread->stacksize;
+    unsigned long * stack_bottom = new_thread->stack + new_thread->stacksize;
+    new_thread->state.rbp = (unsigned long)stack_bottom;
 
     // Put the pointer to wrap and then base pointer on stack
-    (new_thread->state.rbp - 8)*  = lwp_wrap;
-    (new_thread->state.rbp - 16)*  = new_thread->state.rbp;
-
-
-
+    *(stack_bottom - 8) = (unsigned long)lwp_wrap;
+    *(stack_bottom - 16) = new_thread->state.rbp;
 
     // Admit the new LWP to the scheduler
     current_scheduler->admit(new_thread);
@@ -109,7 +107,7 @@ extern void lwp_start(void)
 extern tid_t lwp_wait(int * tid)
 {
 }
-static void lwp_wrap(lwpfun fun, void *arg)
+void lwp_wrap(lwpfun fun, void *arg)
 {
     int rval;
     rval = fun(arg);
