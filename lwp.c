@@ -81,14 +81,14 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
 
     // Get stack bottom
     unsigned long * stack_bottom = new_thread->stack + new_thread->stacksize;
-
-    // Set the base and stack pointer values to what will be top of stack when wrap and base pointers are added to stack
-    new_thread->state.rbp = (unsigned long)stack_bottom - 16;
-    new_thread->state.rsp = (unsigned long)stack_bottom - 16;
     
     // Put the pointer to wrap and base pointer on stack
     *(stack_bottom - 8) = (unsigned long)lwp_wrap;
     *(stack_bottom - 16) = new_thread->state.rbp;
+
+    // Set base and stack pointers to current top of stack
+    new_thread->state.rbp = (unsigned long)stack_bottom - 16;
+    new_thread->state.rsp = (unsigned long)stack_bottom - 16;
     
     // Admit the new LWP to the scheduler
     current_scheduler->admit(new_thread);
