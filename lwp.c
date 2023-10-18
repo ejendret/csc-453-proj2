@@ -79,14 +79,17 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
     new_thread->state.fxsave = FPU_INIT; 
     new_thread->status = LWP_LIVE;
 
-    // Get stack bottom, set the base pointer to this, this is our "old" base pointer
+    // Get stack bottom
     unsigned long * stack_bottom = new_thread->stack + new_thread->stacksize;
-    new_thread->state.rbp = (unsigned long)stack_bottom;
 
+    // Set the base and stack pointer values to what will be top of stack when wrap and base pointers are added to stack
+    new_thread->state.rbp = (unsigned long)stack_bottom - 16;
+    new_thread->state.rsp = (unsigned long)stack_bottom - 16;
+    
     // Put the pointer to wrap and base pointer on stack
     *(stack_bottom - 8) = (unsigned long)lwp_wrap;
     *(stack_bottom - 16) = new_thread->state.rbp;
-
+    
     // Admit the new LWP to the scheduler
     current_scheduler->admit(new_thread);
 
@@ -94,7 +97,11 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
 }
 extern void lwp_exit(int status)
 {
+    // Update status of thread
+    current_thread->status = MKTERMSTAT(LWP_TERM, status);
 
+    // Yield to next thread
+    lwp_yield();
 }
 extern tid_t lwp_gettid(void)
 {
