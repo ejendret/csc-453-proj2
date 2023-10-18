@@ -100,6 +100,9 @@ extern void lwp_exit(int status)
     // Update status of thread
     current_thread->status = MKTERMSTAT(LWP_TERM, status);
 
+    // Remove from scheduler pool and add to terminated thread queue
+    current_scheduler.remove(current_thread);
+
     // Yield to next thread
     lwp_yield();
 }
