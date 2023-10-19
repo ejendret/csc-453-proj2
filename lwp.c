@@ -81,6 +81,9 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
 
     // Get stack bottom
     unsigned long * stack_bottom = new_thread->stack + new_thread->stacksize;
+
+    // Adjust so that bottom is divisible by 16
+    stack_bottom = stack_bottom - ((unsigned long)stack_bottom % 16);
     
     // Put the pointer to wrap and base pointer on stack
     *(stack_bottom - 8) = (unsigned long)lwp_wrap;
@@ -101,7 +104,7 @@ extern void lwp_exit(int status)
     current_thread->status = MKTERMSTAT(LWP_TERM, status);
 
     // Remove from scheduler pool and add to terminated thread queue
-    current_scheduler.remove(current_thread);
+    current_scheduler->remove(current_thread);
 
     // Yield to next thread
     lwp_yield();
