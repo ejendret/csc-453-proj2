@@ -79,12 +79,6 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
     new_thread->state.fxsave = FPU_INIT; 
     new_thread->status = LWP_LIVE;
 
-    // Get stack bottom
-    unsigned long * stack_bottom = new_thread->stack + new_thread->stacksize;
-
-    // Adjust so that bottom is divisible by 16
-    stack_bottom = stack_bottom - ((unsigned long)stack_bottom % 16);
-
     // Set base and stack pointers what will be top of stack
     new_thread->state.rbp = (unsigned long)&new_thread->stack[new_thread->stacksize - 2];
     new_thread->state.rsp = (unsigned long)&new_thread->stack[new_thread->stacksize - 2];
