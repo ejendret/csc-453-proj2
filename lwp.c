@@ -18,10 +18,10 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
 {
     // Check scheduler, should default to rr if null
     // CHANGE?
-    if (current_scheduler == NULL) 
-    {
-        return NO_THREAD;
-    }
+    // if (current_scheduler == NULL) 
+    // {
+    //     return NO_THREAD;
+    // }
 
     //Initialize new thread struct for LWP
     thread new_thread = (thread)malloc(sizeof(context));
@@ -73,7 +73,7 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
     // Setup stack and thread context
     thread_counter++;
     new_thread->tid = thread_counter;
-    new_thread->stacksize = howbig;
+    new_thread->stacksize = howbig/sizeof(unsigned long);
     new_thread->state.rdi = (unsigned long)fun; // arg 1 of lwp_wrap
     new_thread->state.rsi = (unsigned long)arg; // arg2 of lwp_wrap
     new_thread->state.fxsave = FPU_INIT; 
@@ -84,15 +84,15 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
 
     // Adjust so that bottom is divisible by 16
     stack_bottom = stack_bottom - ((unsigned long)stack_bottom % 16);
+
+    // Set base and stack pointers what will be top of stack
+    new_thread->state.rbp = (unsigned long)&new_thread->stack[new_thread->stacksize - 2];
+    new_thread->state.rsp = (unsigned long)&new_thread->stack[new_thread->stacksize - 2];
     
     // Put the pointer to wrap and base pointer on stack
-    *(stack_bottom - 8) = (unsigned long)lwp_wrap;
-    *(stack_bottom - 16) = new_thread->state.rbp;
+    new_thread->stack[new_thread->stacksize - 1] = (unsigned long)lwp_wrap;
+    new_thread->stack[new_thread->stacksize - 2] = new_thread->state.rbp;
 
-    // Set base and stack pointers to current top of stack
-    new_thread->state.rbp = (unsigned long)stack_bottom - 16;
-    new_thread->state.rsp = (unsigned long)stack_bottom - 16;
-    
     // Admit the new LWP to the scheduler
     current_scheduler->admit(new_thread);
 
@@ -104,7 +104,7 @@ extern void lwp_exit(int status)
     current_thread->status = MKTERMSTAT(LWP_TERM, status);
 
     // Remove from scheduler pool and add to terminated thread queue
-    current_scheduler->remove(current_thread);
+    // current_scheduler->remove(current_thread);
 
     // Yield to next thread
     lwp_yield();
@@ -144,7 +144,6 @@ extern void lwp_yield(void)
     // Context switch
     swap_rfiles(&current_thread->state, &next_thread->state);
     current_thread = next_thread;
-
 }
 extern void lwp_start(void)
 {
@@ -164,13 +163,14 @@ extern void lwp_start(void)
     new_thread->status = LWP_LIVE;
 
     // Admit to scheduler
-    current_scheduler->admit(new_thread);
+    // current_scheduler->admit(new_thread);
 
     // Yield to next thread
     lwp_yield();
 }
 extern tid_t lwp_wait(int * tid)
 {
+    return -1;
 }
 void lwp_wrap(lwpfun fun, void *arg)
 {

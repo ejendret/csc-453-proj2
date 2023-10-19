@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/resource.h>
 #include <sys/mman.h>
+#include <stdio.h>
 
 #ifndef TRUE
 #define TRUE 1
