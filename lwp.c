@@ -79,12 +79,6 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
     new_thread->state.fxsave = FPU_INIT; 
     new_thread->status = LWP_LIVE;
 
-    // Get stack bottom
-    unsigned long * stack_bottom = new_thread->stack + new_thread->stacksize;
-
-    // Adjust so that bottom is divisible by 16
-    stack_bottom = stack_bottom - ((unsigned long)stack_bottom % 16);
-
     // Set base and stack pointers what will be top of stack
     new_thread->state.rbp = (unsigned long)&new_thread->stack[new_thread->stacksize - 2];
     new_thread->state.rsp = (unsigned long)&new_thread->stack[new_thread->stacksize - 2];
@@ -94,8 +88,11 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
     new_thread->stack[new_thread->stacksize - 2] = new_thread->state.rbp;
 
     // Admit the new LWP to the scheduler
-    current_scheduler->admit(new_thread);
+    // current_scheduler->admit(new_thread);
+    
+    current_thread = new_thread;
 
+    lwp_yield();
     return new_thread->tid;
 }
 extern void lwp_exit(int status)
@@ -120,7 +117,9 @@ extern tid_t lwp_gettid(void)
 extern void lwp_yield(void)
 {
     // Get new thread to run
-    thread next_thread = current_scheduler->next();
+    // thread next_thread = current_scheduler->next();
+    fprintf(stderr, "HEY!");
+    thread next_thread = current_thread;
 
     // If there is no new thread to run, exit with exit status
     if (next_thread == NULL)
@@ -142,8 +141,9 @@ extern void lwp_yield(void)
     }
 
     // Context switch
-    swap_rfiles(&current_thread->state, &next_thread->state);
+    fprintf(stderr, " HO\n");
     current_thread = next_thread;
+    swap_rfiles(NULL, &current_thread->state);
 }
 extern void lwp_start(void)
 {
