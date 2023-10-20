@@ -6,12 +6,10 @@
 void init(void);
 void shutdown(void);
 void admit(thread new);
-void rem(thread victim);
+void remove(thread victim);
 thread next(void);
 int qlen(void);
 
-void print_scheduler(void);
-
-static scheduler current_scheduler;
+// void print_scheduler(void);
 
 #endif

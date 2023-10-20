@@ -1,9 +1,6 @@
 #include "rr.h"
 #include "lwp.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
 // Define a structure for a node in the linked list
 typedef struct Node {
     thread data;        // Thread data
@@ -18,6 +15,7 @@ typedef struct LinkedList {
 
 // Initialize the linked list
 void initLinkedList(LinkedList* list) {
+    perror("in init ll");
     list->head = NULL;
     list->tail = NULL;
 }
@@ -28,18 +26,20 @@ static LinkedList list;
 
 // // Initialize the RR scheduler
 void init(void) {
-    if (list.head == NULL) {
+    // if (current_scheduler == NULL) 
+    // {
+    //     current_scheduler = (scheduler)malloc(sizeof(struct scheduler));
+    //     current_scheduler->init = init;
+    //     current_scheduler->shutdown = shutdown;
+    //     current_scheduler->admit = admit;
+    //     current_scheduler->rem = rem;
+    //     current_scheduler->next = next;
+    //     current_scheduler->qlen = qlen;
+    // }
+    perror("in init");
+    if (list.head == NULL) 
+    {
         initLinkedList(&list);
-    }
-
-    if (current_scheduler == NULL) {
-        current_scheduler = (scheduler)malloc(sizeof(struct scheduler));
-        current_scheduler->init = init;
-        current_scheduler->shutdown = shutdown;
-        current_scheduler->admit = admit;
-        current_scheduler->rem = rem;
-        current_scheduler->next = next;
-        current_scheduler->qlen = qlen;
     }
 }
 
@@ -54,7 +54,7 @@ void shutdown(void) {
 
 // Add a thread to the round-robin queue
 void admit(thread new) {
-    printf("in admit\n");
+    // printf("in admit\n");
     if (new == NULL) {
         return; // Do not admit NULL threads
     }
@@ -62,21 +62,21 @@ void admit(thread new) {
     Node* newNode = (Node*)malloc(sizeof(Node));
     newNode->data = new;
     newNode->next = NULL;
-    printf("after malloc\n");
+    // printf("after malloc\n");
 
     if (list.head == NULL) {
-        printf("in if\n");
+        // printf("in if\n");
         list.head = newNode;
         list.tail = newNode;
     } else {
-        printf("in else\n");
+        // printf("in else\n");
         list.tail->next = newNode;
         list.tail = newNode;
     }
 }
 
 // Remove a thread from the round-robin queue
-void rem(thread victim) {
+void remove(thread victim) {
     if (victim == NULL || list.head == NULL) {
         return; // Do not rem NULL threads or from an empty queue
     }
@@ -136,13 +136,13 @@ int qlen(void) {
     return count;
 }
 
-void print_scheduler() {
-    printf("Num in queue: %d\n", qlen());
-    printf("Scheduler Queue:\n");
+// void print_scheduler(void) {
+//     printf("Num in queue: %d\n", qlen());
+//     printf("Scheduler Queue:\n");
 
-    Node* current = list.head;
-    while (current != NULL) {
-        printf("Thread: %p\n", current->data);
-        current = current->next;
-    }
-}
+//     Node* current = list.head;
+//     while (current != NULL) {
+//         printf("Thread: %p\n", current->data);
+//         current = current->next;
+//     }
+// }

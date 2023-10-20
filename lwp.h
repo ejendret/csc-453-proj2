@@ -16,6 +16,7 @@
 
 #if defined(__x86_64)
 #include "fp.h"
+
 typedef struct __attribute__ ((aligned(16))) __attribute__ ((packed))
 registers {
   unsigned long rax;            /* the sixteen architecturally-visible regs. */
@@ -91,5 +92,10 @@ extern thread tid2thread(tid_t tid);
 
 /* prototypes for asm functions */
 void swap_rfiles(rfile *old, rfile *new);
+
+scheduler current_scheduler;
+
+// 8MB stack size, assuming MB is 1024^2
+#define DEFAULT_STACK_SIZE 8388608
 
 #endif
