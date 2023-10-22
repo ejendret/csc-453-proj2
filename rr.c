@@ -23,6 +23,7 @@ void initLinkedList(LinkedList* list) {
 // Global variable to hold the current RR scheduler
 // static scheduler current_scheduler = NULL;
 static LinkedList list;
+// static LinkedList *origin;
 
 // // Initialize the RR scheduler
 void init(void) {
@@ -68,6 +69,7 @@ void admit(thread new) {
         // printf("in if\n");
         list.head = newNode;
         list.tail = newNode;
+        // origin = &list;
     } else {
         // printf("in else\n");
         list.tail->next = newNode;
@@ -77,11 +79,13 @@ void admit(thread new) {
 
 // Remove a thread from the round-robin queue
 void remove(thread victim) {
+    perror("remove");
     if (victim == NULL || list.head == NULL) {
         return; // Do not rem NULL threads or from an empty queue
     }
 
     if (list.head->data == victim) {
+        perror("remove head");
         Node* next_node = list.head->next;
         free(list.head);
         list.head = next_node;
@@ -107,18 +111,30 @@ void remove(thread victim) {
 // Select the next thread to schedule (round-robin)
 thread next(void) {
     if (list.head == NULL) {
+        perror("head empty");
         return NULL;
     }
+    perror("head not empty");
 
-    Node* next_node = list.head;
-    list.head = next_node->next;
+    // Track the current node in the list
+    static Node *current_node = NULL;
 
-    if (list.head == NULL) {
-        list.tail = NULL;
+    if (current_node == NULL) {
+        perror("current node empty, set to head: START");
+        current_node = list.head;
+    } else {
+        current_node = current_node->next;
+        if (current_node == NULL) {
+            perror("current node empty, set to head: END1");
+            // list.tail->next = list.head;
+            // list.tail = list.head;
+            current_node = list.head;  // Reset to the head when reaching the end
+        }
     }
 
-    thread next_thread = next_node->data;
-    free(next_node);
+    thread next_thread = current_node->data;
+
+    perror("leave next");
 
     return next_thread;
 }

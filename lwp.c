@@ -104,7 +104,7 @@ extern void lwp_exit(int status)
     current_thread->status = MKTERMSTAT(LWP_TERM, status);
 
     // Remove from scheduler pool and add to terminated thread queue
-    // current_scheduler->remove(current_thread);
+    current_scheduler->remove(current_thread);
 
     // Yield to next thread
     lwp_yield();
@@ -119,12 +119,60 @@ extern tid_t lwp_gettid(void)
 }
 extern void lwp_yield(void)
 {
+    perror("yield");
     // Get new thread to run
     thread next_thread = current_scheduler->next();
+    perror("yielded");
+    
+    if (current_thread->tid == -1) {
+        write(1, "-1", 2);
+    } else if (current_thread->tid == 0) {
+        write(1, "0", 1);
+    } else if (current_thread->tid == 1) {
+        write(1, "1", 1);
+    } else if (current_thread->tid == 2) {
+        write(1, "2", 1);
+    } else if (current_thread->tid == 3) {
+        write(1, "3", 1);
+    } else if (current_thread->tid == 4) {
+        write(1, "4", 1);
+    } else if (current_thread->tid == 5) {
+        write(1, "5", 1);
+    } else if (current_thread->tid == 6) {
+        write(1, "6", 1);
+    } else if (current_thread->tid == 7) {
+        write(1, "7", 1);
+    } else if (current_thread->tid == 8) {
+        write(1, "8", 1);
+    }
+
+    if (next_thread->tid == -1) {
+        write(1, "-1", 2);
+    } else if (next_thread->tid == 0) {
+        write(1, "0", 1);
+    } else if (next_thread->tid == 1) {
+        write(1, "1", 1);
+    } else if (next_thread->tid == 2) {
+        write(1, "2", 1);
+    } else if (next_thread->tid == 3) {
+        write(1, "3", 1);
+    } else if (next_thread->tid == 4) {
+        write(1, "4", 1);
+    } else if (next_thread->tid == 5) {
+        write(1, "5", 1);
+    } else if (next_thread->tid == 6) {
+        write(1, "6", 1);
+    } else if (next_thread->tid == 7) {
+        write(1, "7", 1);
+    } else if (next_thread->tid == 8) {
+        write(1, "8", 1);
+    }
+
 
     // If there is no new thread to run, exit with exit status
     if (next_thread == NULL)
     {
+        perror("done");
         // Get exit status and clean up
         unsigned int exit_status = current_thread->status;
         
@@ -142,13 +190,14 @@ extern void lwp_yield(void)
     }
 
     // Context switch
+    perror("swap");
     swap_rfiles(&current_thread->state, &next_thread->state);
     current_thread = next_thread;
+    perror("swapped");
 }
 extern void lwp_start(void)
 {
-    // perror("start");
-    // perror("current num of threads: %d\n", current_scheduler->qlen());
+    perror("start");
     //Initialize new thread struct for LWP
     thread new_thread = (thread)malloc(sizeof(context));
     if (new_thread == NULL)
@@ -157,23 +206,51 @@ extern void lwp_start(void)
         exit(EXIT_FAILURE);
     }
 
-    // Set the context for thread, already have a stack so new_thread->stack should be NULL
-    current_thread = new_thread;
+    // Set the context for thread, already have a stack so new_thread->stack should be NULL\
     thread_counter++;
     new_thread->tid = thread_counter;
     new_thread->stack = NULL;
+    // new_thread->state = NULL;
     new_thread->status = LWP_LIVE;
+    current_thread = new_thread;
 
     // Admit to scheduler
-    // current_scheduler->admit(new_thread);
+    current_scheduler->admit(current_thread);
 
     // Yield to next thread
     lwp_yield();
 }
-extern tid_t lwp_wait(int * tid)
+// extern tid_t lwp_wait(int * tid)
+// {
+//     perror("wait");
+//     return -1;
+// }
+
+tid_t lwp_wait(int *tid)
 {
-    return -1;
+    perror("wait");
+    // Block if there are no terminated threads and there are more than one
+    while (current_scheduler->qlen() > 1) {
+        thread next_thread = current_scheduler->next();
+        if (next_thread->status & LWP_TERM) {
+            if (tid != NULL) {
+                *tid = next_thread->tid;
+            }
+            int status = (next_thread->status >> 8) & 0xFF;
+            // Deallocate resources of the terminated thread
+            if (next_thread->tid != current_thread->tid) {
+                free(next_thread->stack);
+                free(next_thread);
+            }
+            return status;
+        } else {
+            lwp_yield();
+        }
+    }
+
+    return NO_THREAD; // No terminated threads or last runnable thread
 }
+
 void lwp_wrap(lwpfun fun, void *arg)
 {
     int rval;
@@ -186,7 +263,43 @@ extern void lwp_set_scheduler(scheduler fun)
 }
 extern scheduler lwp_get_scheduler(void)
 {
+    return current_scheduler;
 }
 extern thread tid2thread(tid_t tid)
 {
+    // Iterate through the list of threads and find the one with the matching tid
+    thread current = current_scheduler->next();  // Assuming you have a list of threads in your scheduler
+
+    while (current != NULL)
+    {
+        if (current->tid == -1) {
+            write(1, "-1", 2);
+        } else if (current->tid == 0) {
+            write(1, "0", 1);
+        } else if (current->tid == 1) {
+            write(1, "1", 1);
+        } else if (current->tid == 2) {
+            write(1, "2", 1);
+        } else if (current->tid == 3) {
+            write(1, "3", 1);
+        } else if (current->tid == 4) {
+            write(1, "4", 1);
+        } else if (current->tid == 5) {
+            write(1, "5", 1);
+        } else if (current->tid == 6) {
+            write(1, "6", 1);
+        } else if (current->tid == 7) {
+            write(1, "7", 1);
+        } else if (current->tid == 8) {
+            write(1, "8", 1);
+        }
+        if (current->tid == tid)
+        {
+            return current;  // Found the thread with the matching tid
+        }
+        current = current_scheduler->next();
+    }
+
+    // If no thread with the given tid is found, return NULL
+    return NULL;
 }
