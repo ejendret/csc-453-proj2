@@ -109,13 +109,26 @@ extern void lwp_exit(int status) {
     // Update the status of the current thread
     current_thread->status = MKTERMSTAT(LWP_TERM, status);
 
+    // Check if there are threads waiting for an exit
+    thread waiting_thread = NULL;
+
+    // Check if there are waiting threads
     if (waiting_count > 0) {
-        // There are waiting threads, associate one of them with the exiting thread
-        thread waiting_thread = waiting_threads[--waiting_count];
-        // waiting_thread->exited = current_thread;
-        // current_scheduler->admit(waiting_thread);
+        // There are waiting threads, grab one
+        waiting_thread = waiting_threads[--waiting_count];
+    }
+
+    // Remove the current thread from the scheduler
+    current_scheduler->remove(current_thread);
+
+    if (waiting_thread != NULL) {
+        // If a waiting thread exists, associate it with the exiting thread
+        waiting_thread->exited = current_thread;
+
+        // Re-admit the waiting thread to the scheduler
+        current_scheduler->admit(waiting_thread);
     } else {
-        // No waiting threads, add the current thread to the terminated queue
+        // No waiting threads, add the current thread to the terminated threads queue
         terminated_threads[terminated_count++] = current_thread;
     }
 
