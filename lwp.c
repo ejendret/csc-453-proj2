@@ -98,17 +98,31 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
 
     return new_thread->tid;
 }
+
 extern void lwp_exit(int status)
 {
-    // Update status of thread
+    // Update status of the current thread
     current_thread->status = MKTERMSTAT(LWP_TERM, status);
 
-    // Remove from scheduler pool and add to terminated thread queue
-    current_scheduler->remove(current_thread);
+    // Check if there are threads waiting for an exit
+    thread waiting_thread = current_scheduler->next(); // Get the next thread
+    if (waiting_thread != NULL) {
+        // If a waiting thread exists, associate it with the exiting thread
+        waiting_thread->exited = current_thread;
+        // Remove the waiting thread from the scheduler
+        current_scheduler->remove(waiting_thread);
+        // Re-admit the waiting thread to the scheduler
+        current_scheduler->admit(waiting_thread);
+    } else {
+        // If there are no waiting threads, add the current thread to the terminated thread queue
+        // and remove it from the scheduler
+        current_scheduler->remove(current_thread);
+    }
 
-    // Yield to next thread
+    // Yield to the next thread
     lwp_yield();
 }
+
 extern tid_t lwp_gettid(void)
 {
     if (current_thread != NULL)
@@ -191,13 +205,18 @@ extern void lwp_yield(void)
 
     // Context switch
     perror("swap");
-    swap_rfiles(&current_thread->state, &next_thread->state);
+
+    rfile *temp_thread = &current_thread->state;
     current_thread = next_thread;
+
+    swap_rfiles(temp_thread, &current_thread->state);
+    
     perror("swapped");
 }
 extern void lwp_start(void)
 {
     perror("start");
+
     //Initialize new thread struct for LWP
     thread new_thread = (thread)malloc(sizeof(context));
     if (new_thread == NULL)
@@ -206,7 +225,7 @@ extern void lwp_start(void)
         exit(EXIT_FAILURE);
     }
 
-    // Set the context for thread, already have a stack so new_thread->stack should be NULL\
+    // Set the context for thread, already have a stack so new_thread->stack should be NULL
     thread_counter++;
     new_thread->tid = thread_counter;
     new_thread->stack = NULL;
@@ -216,6 +235,7 @@ extern void lwp_start(void)
 
     // Admit to scheduler
     current_scheduler->admit(current_thread);
+    swap_rfiles(&current_thread->state, NULL);
 
     // Yield to next thread
     lwp_yield();
@@ -228,24 +248,26 @@ extern void lwp_start(void)
 
 tid_t lwp_wait(int *tid)
 {
-    perror("wait");
-    // Block if there are no terminated threads and there are more than one
-    while (current_scheduler->qlen() > 1) {
-        thread next_thread = current_scheduler->next();
-        if (next_thread->status & LWP_TERM) {
-            if (tid != NULL) {
-                *tid = next_thread->tid;
-            }
-            int status = (next_thread->status >> 8) & 0xFF;
-            // Deallocate resources of the terminated thread
-            if (next_thread->tid != current_thread->tid) {
-                free(next_thread->stack);
-                free(next_thread);
-            }
-            return status;
-        } else {
-            lwp_yield();
+    // Check if there are terminated threads
+    thread terminated_thread = current_scheduler->next(); // Get the next thread
+    if (terminated_thread != NULL && (terminated_thread->status & LWP_TERM)) {
+        // A terminated thread exists
+        if (tid != NULL) {
+            *tid = terminated_thread->tid;
         }
+        int status = (terminated_thread->status >> 8) & 0xFF;
+
+        // Deallocate resources of the terminated thread
+        if (terminated_thread->tid != current_thread->tid) {
+            free(terminated_thread->stack);
+            free(terminated_thread);
+        }
+        return status;
+    } else {
+        // No terminated thread exists, so block the current thread
+        // by removing it from the scheduler and yielding to the next thread
+        current_scheduler->remove(current_thread);
+        lwp_yield();
     }
 
     return NO_THREAD; // No terminated threads or last runnable thread
@@ -303,3 +325,8 @@ extern thread tid2thread(tid_t tid)
     // If no thread with the given tid is found, return NULL
     return NULL;
 }
+
+//  git add .
+//  git commit -m "with rr2"
+//  git checkout -b luc
+//  git push origin luc

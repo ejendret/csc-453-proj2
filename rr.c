@@ -69,6 +69,10 @@ void admit(thread new) {
         // printf("in if\n");
         list.head = newNode;
         list.tail = newNode;
+        if(list.head->data->tid == 1)
+        {
+            perror("head == 1");
+        }
         // origin = &list;
     } else {
         // printf("in else\n");
@@ -79,12 +83,21 @@ void admit(thread new) {
 
 // Remove a thread from the round-robin queue
 void remove(thread victim) {
+    if(victim->tid == 1)
+    {
+        perror("victim == 1");
+    }
+        else if(victim->tid == 2)
+    {
+        perror("victim == 2");
+    }
     perror("remove");
     if (victim == NULL || list.head == NULL) {
+        perror("empty");
         return; // Do not rem NULL threads or from an empty queue
     }
 
-    if (list.head->data == victim) {
+    if (list.head->data->tid == victim->tid) {
         perror("remove head");
         Node* next_node = list.head->next;
         free(list.head);
@@ -93,6 +106,8 @@ void remove(thread victim) {
             list.tail = NULL;
         }
     } else {
+        
+        perror("remove not head?s");
         Node* prev = list.head;
         while (prev->next != NULL && prev->next->data != victim) {
             prev = prev->next;
@@ -105,6 +120,14 @@ void remove(thread victim) {
                 list.tail = prev;
             }
         }
+    }
+        if(list.head->data->tid == 1)
+    {
+        perror("head == 1");
+    }
+        else if(list.head->data->tid == 2)
+    {
+        perror("head == 2");
     }
 }
 
@@ -122,13 +145,16 @@ thread next(void) {
     if (current_node == NULL) {
         perror("current node empty, set to head: START");
         current_node = list.head;
+        // list.tail = current_node;
     } else {
         current_node = current_node->next;
-        if (current_node == NULL) {
+        if (current_node == NULL) 
+        {
             perror("current node empty, set to head: END1");
             // list.tail->next = list.head;
             // list.tail = list.head;
             current_node = list.head;  // Reset to the head when reaching the end
+            // list.tail = current_node;
         }
     }
 
