@@ -101,6 +101,34 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
 
 extern void lwp_exit(int status)
 {
+        if(status == 1)
+    {
+        perror("status == 1");
+    }
+        else if(status == 2)
+    {
+        perror("status == 2");
+    }
+        if(status == 3)
+    {
+        perror("status == 3");
+    }
+        else if(status == 4)
+    {
+        perror("status == 4");
+    }
+        if(status == 5)
+    {
+        perror("status == 5");
+    }
+        else if(status == 6)
+    {
+        perror("status == 6");
+    }
+    else
+    {
+        perror("status == ?");
+    }
     // Update status of the current thread
     current_thread->status = MKTERMSTAT(LWP_TERM, status);
 

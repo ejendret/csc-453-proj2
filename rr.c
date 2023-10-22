@@ -91,6 +91,26 @@ void remove(thread victim) {
     {
         perror("victim == 2");
     }
+        if(victim->tid == 3)
+    {
+        perror("victim == 3");
+    }
+        else if(victim->tid == 4)
+    {
+        perror("victim == 4");
+    }
+        if(victim->tid == 5)
+    {
+        perror("victim == 5");
+    }
+        else if(victim->tid == 6)
+    {
+        perror("victim == 6");
+    }
+    else
+    {
+        perror("victim == ?");
+    }
     perror("remove");
     if (victim == NULL || list.head == NULL) {
         perror("empty");
