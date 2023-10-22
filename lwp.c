@@ -1,6 +1,12 @@
 #include "lwp.h"
 #include "rr.h"
 #include "schedulers.h"
+#define MAX_THREADS 100 // Define a maximum number of threads
+
+static thread terminated_threads[MAX_THREADS];
+static thread waiting_threads[MAX_THREADS];
+static int terminated_count = 0;
+static int waiting_count = 0;
 
 static tid_t thread_counter = NO_THREAD;
 static thread current_thread = NULL;
@@ -99,52 +105,18 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
     return new_thread->tid;
 }
 
-extern void lwp_exit(int status)
-{
-        if(status == 1)
-    {
-        perror("status == 1");
-    }
-        else if(status == 2)
-    {
-        perror("status == 2");
-    }
-        if(status == 3)
-    {
-        perror("status == 3");
-    }
-        else if(status == 4)
-    {
-        perror("status == 4");
-    }
-        if(status == 5)
-    {
-        perror("status == 5");
-    }
-        else if(status == 6)
-    {
-        perror("status == 6");
-    }
-    else
-    {
-        perror("status == ?");
-    }
-    // Update status of the current thread
+extern void lwp_exit(int status) {
+    // Update the status of the current thread
     current_thread->status = MKTERMSTAT(LWP_TERM, status);
 
-    // Check if there are threads waiting for an exit
-    thread waiting_thread = current_scheduler->next(); // Get the next thread
-    if (waiting_thread != NULL) {
-        // If a waiting thread exists, associate it with the exiting thread
-        waiting_thread->exited = current_thread;
-        // Remove the waiting thread from the scheduler
-        current_scheduler->remove(waiting_thread);
-        // Re-admit the waiting thread to the scheduler
-        current_scheduler->admit(waiting_thread);
+    if (waiting_count > 0) {
+        // There are waiting threads, associate one of them with the exiting thread
+        thread waiting_thread = waiting_threads[--waiting_count];
+        // waiting_thread->exited = current_thread;
+        // current_scheduler->admit(waiting_thread);
     } else {
-        // If there are no waiting threads, add the current thread to the terminated thread queue
-        // and remove it from the scheduler
-        current_scheduler->remove(current_thread);
+        // No waiting threads, add the current thread to the terminated queue
+        terminated_threads[terminated_count++] = current_thread;
     }
 
     // Yield to the next thread
@@ -276,25 +248,27 @@ extern void lwp_start(void)
 
 tid_t lwp_wait(int *tid)
 {
-    // Check if there are terminated threads
-    thread terminated_thread = current_scheduler->next(); // Get the next thread
-    if (terminated_thread != NULL && (terminated_thread->status & LWP_TERM)) {
-        // A terminated thread exists
+    // If there are terminated threads, return the oldest one
+    if (terminated_count > 0) {
+        thread terminated_thread = terminated_threads[--terminated_count];
         if (tid != NULL) {
             *tid = terminated_thread->tid;
         }
         int status = (terminated_thread->status >> 8) & 0xFF;
 
         // Deallocate resources of the terminated thread
-        if (terminated_thread->tid != current_thread->tid) {
-            free(terminated_thread->stack);
-            free(terminated_thread);
-        }
+        free(terminated_thread->stack);
+        free(terminated_thread);
+
         return status;
     } else {
-        // No terminated thread exists, so block the current thread
-        // by removing it from the scheduler and yielding to the next thread
+        // No terminated threads, block the current thread by removing it from the scheduler
         current_scheduler->remove(current_thread);
+
+        // Add the current thread to the waiting queue
+        waiting_threads[waiting_count++] = current_thread;
+
+        // Yield to the next thread
         lwp_yield();
     }
 
