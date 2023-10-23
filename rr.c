@@ -3,15 +3,15 @@
 thread head = NULL;
 thread tail = NULL;
 
-void rr_admit(thread new)
+void admit(thread new)
 {
     if (head == NULL)
     {
         // Set head and tail to new, set next to NULL
         head = new;
         tail = new;
-        new.next = NULL;
-        new.prev = NULL;
+        new->next = NULL;
+        new->prev = NULL;
     }
     else{
         // Set previous tail next to new and then update tail to new
@@ -23,7 +23,7 @@ void rr_admit(thread new)
     }
 }
 
-void rr_remove(thread victim){
+void remove(thread victim){
     thread current = head;
 
     // Loop until end of list or victim found
@@ -53,7 +53,7 @@ void rr_remove(thread victim){
         // If victim is tail, set the tail to the previous thread
         else if (current == tail)
         {
-            tail = curent->prev;
+            tail = current->prev;
             tail->next = NULL;
         }
         // If victim is arbitrary thread between head and tail, link the previous and next nodes
@@ -68,8 +68,8 @@ void rr_remove(thread victim){
     }
 }
 
-thread rr_next(){
-    return_thread = NULL;
+thread next(){
+    thread return_thread = NULL;
     
     // If list isn't empty
     if (head != NULL)
@@ -91,15 +91,17 @@ thread rr_next(){
     }
 
     // Readmit the previous head to the back of the list
-    rr_admit(return_thread);
+    admit(return_thread);
 
     return return_thread;
 }
 
-int rr_qlen()
+int qlen()
 {
     int count = 0;
     thread current = head;
+
+    // Loop until end is reached, incrementing counter
     while (current != NULL)
     {
         current = current->next;
