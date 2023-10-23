@@ -1,13 +1,16 @@
-#ifndef LWPH
-#define LWPH
+#ifndef TLH
+#define TLH
 
 #include "lwp.h"
 
-struct typedef ThreadList(
+typedef struct ThreadList(
     thread head;
     int size;
-) ThreadList
+) ThreadList;
 
+ThreadList * initThreadList();
+
+thread addThread(ThreadList * list, thread new_thread);
 
 
 #endif
