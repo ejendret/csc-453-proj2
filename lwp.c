@@ -12,6 +12,8 @@ static tid_t thread_counter = NO_THREAD;
 static thread current_thread = NULL;
 static void* initial_stack = NULL;
 
+scheduler current_scheduler = {NULL, NULL, admit, remove, next, qlen};
+
 /*
 Creates a new thread and admits it to the current scheduler. The thread’s resources will consist of a
 context and stack, both initialized so that when the scheduler chooses this thread and its context is
@@ -19,18 +21,14 @@ loaded via swap_rfiles() it will run the given function. This may be called by a
 */
 extern tid_t lwp_create(lwpfun fun, void * arg)
 {
-    // Check scheduler, should default to rr if null
-    // CHANGE?
+    perror("create");
+    // // Check scheduler, should default to rr if null
+    // // CHANGE?
     if (current_scheduler == NULL) 
     {
-        perror("setup scheduler");
-        struct scheduler rr_publish = {init, shutdown, admit, remove, next, qlen};
-        lwp_set_scheduler(&rr_publish);
-        // printf("before init rr, scheduler empty\n");
-        // Initialize the RR scheduler
-        current_scheduler->init();
+        lwp_set_scheduler(NULL);
     }
-    perror("after scheduler");
+    // perror("after scheduler");
 
     //Initialize new thread struct for LWP
     thread new_thread = (thread)malloc(sizeof(context));
@@ -295,6 +293,13 @@ extern void lwp_exit(int status)
     // Update the status of the current thread
     current_thread->status = MKTERMSTAT(LWP_TERM, status);
 
+    // Remove the current thread from the scheduler
+    current_scheduler->remove(current_thread);
+
+    //Add the current thread to the terminated threads queue
+    terminated_threads[terminated_count] = current_thread;
+    terminated_count++;
+
     // Check if there are threads waiting for an exit
     if (waiting_count > 0) 
     {
@@ -315,15 +320,6 @@ extern void lwp_exit(int status)
             // Re-admit the waiting thread to the scheduler
             current_scheduler->admit(waiting_thread);
         }
-    }
-    else if (current_thread != NULL)
-    {
-        // Remove the current thread from the scheduler
-        current_scheduler->remove(current_thread);
-
-        //Add the current thread to the terminated threads queue
-        terminated_threads[terminated_count] = current_thread;
-        terminated_count++;
     }
 
     // Yield to the next thread
@@ -349,7 +345,7 @@ void lwp_wrap(lwpfun fun, void *arg)
 extern void lwp_set_scheduler(scheduler fun) {
     if (fun == NULL) {
         // Revert to round-robin scheduling
-        struct scheduler publish = {init, shutdown, admit, remove, next, qlen};
+        struct scheduler publish = {NULL, NULL, admit, remove, next, qlen};
         lwp_set_scheduler(&publish);
     } else {
         // Transfer threads from the old scheduler to the new one
@@ -368,7 +364,8 @@ extern scheduler lwp_get_scheduler(void)
     return current_scheduler;
 }
 
-extern thread tid2thread(tid_t tid) {
+extern thread tid2thread(tid_t tid) 
+{
     int length = current_scheduler->qlen();
     thread current = current_scheduler->next();
 
@@ -377,11 +374,11 @@ extern thread tid2thread(tid_t tid) {
         if (current->tid == tid) {
             return current;  // Found the thread with the matching tid
         }
-        current = current->next();
+        current = current_scheduler->next();
     }
 
     // If no thread with the given tid is found, return NULL
-    return NULL;
+    return NO_THREAD;
 }
 
 

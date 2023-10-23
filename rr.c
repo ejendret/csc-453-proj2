@@ -1,210 +1,112 @@
 #include "rr.h"
 #include "lwp.h"
 
-// Define a structure for a node in the linked list
-typedef struct Node {
-    thread data;        // Thread data
-    struct Node* next;  // Pointer to the next node
-} Node;
+thread head = NULL;
+thread tail = NULL;
 
-// Define the linked list structure
-typedef struct LinkedList {
-    Node* head; // Pointer to the first node
-    Node* tail; // Pointer to the last node
-} LinkedList;
-
-// Initialize the linked list
-void initLinkedList(LinkedList* list) {
-    perror("in init ll");
-    list->head = NULL;
-    list->tail = NULL;
-}
-
-// Global variable to hold the current RR scheduler
-// static scheduler current_scheduler = NULL;
-static LinkedList list;
-// static LinkedList *origin;
-
-// // Initialize the RR scheduler
-void init(void) {
-    // if (current_scheduler == NULL) 
-    // {
-    //     current_scheduler = (scheduler)malloc(sizeof(struct scheduler));
-    //     current_scheduler->init = init;
-    //     current_scheduler->shutdown = shutdown;
-    //     current_scheduler->admit = admit;
-    //     current_scheduler->rem = rem;
-    //     current_scheduler->next = next;
-    //     current_scheduler->qlen = qlen;
-    // }
-    perror("in init");
-    if (list.head == NULL) 
+void admit(thread new)
+{
+    if (head == NULL)
     {
-        initLinkedList(&list);
+        // Set head and tail to new, set next to NULL
+        head = new;
+        tail = new;
+        new->next = NULL;
+        new->prev = NULL;
+    }
+    else{
+        // Set previous tail next to new and then update tail to new
+        tail->next = new;
+        thread temp = tail;
+        tail = new;
+        tail->prev = temp;
+        tail->next = NULL;
     }
 }
 
-// Tear down the RR scheduler and free resources
-void shutdown(void) {
-    while (list.head) {
-        Node* next_node = list.head->next;
-        free(list.head);
-        list.head = next_node;
-    }
-}
+void remove(thread victim){
+    thread current = head;
 
-// Add a thread to the round-robin queue
-void admit(thread new) {
-    // printf("in admit\n");
-    if (new == NULL) {
-        return; // Do not admit NULL threads
-    }
-
-    Node* newNode = (Node*)malloc(sizeof(Node));
-    newNode->data = new;
-    newNode->next = NULL;
-    // printf("after malloc\n");
-
-    if (list.head == NULL) {
-        // printf("in if\n");
-        list.head = newNode;
-        list.tail = newNode;
-        if(list.head->data->tid == 1)
-        {
-            perror("head == 1");
-        }
-        // origin = &list;
-    } else {
-        // printf("in else\n");
-        list.tail->next = newNode;
-        list.tail = newNode;
-    }
-}
-
-// Remove a thread from the round-robin queue
-void remove(thread victim) {
-    if(victim->tid == 1)
+    // Loop until end of list or victim found
+    while (current != NULL && current != victim)
     {
-        perror("victim == 1");
-    }
-        else if(victim->tid == 2)
-    {
-        perror("victim == 2");
-    }
-        if(victim->tid == 3)
-    {
-        perror("victim == 3");
-    }
-        else if(victim->tid == 4)
-    {
-        perror("victim == 4");
-    }
-        if(victim->tid == 5)
-    {
-        perror("victim == 5");
-    }
-        else if(victim->tid == 6)
-    {
-        perror("victim == 6");
-    }
-    else
-    {
-        perror("victim == ?");
-    }
-    perror("remove");
-    if (victim == NULL || list.head == NULL) {
-        return; // Do not remove NULL threads or from an empty queue
-    }
-
-    if (list.head->data->tid == victim->tid) {
-        Node* next_node = list.head->next;
-        if (list.head == list.tail) {
-            list.tail = next_node;
-        }
-        free(list.head);
-        list.head = next_node;
-        if (list.head == NULL) {
-            list.tail = NULL;
-        }
-    } else {
-        Node* prev = list.head;
-        while (prev->next != NULL && prev->next->data->tid != victim->tid) {
-            prev = prev->next;
-        }
-        if (prev->next != NULL) {
-            Node* removed = prev->next;
-            prev->next = removed->next;
-            if (removed == list.tail) {
-                list.tail = prev; // Update the tail pointer
-            }
-            free(removed);
-        }
-
-    }
-        if(list.head->data->tid == 1)
-    {
-        perror("head == 1");
-    }
-        else if(list.head->data->tid == 2)
-    {
-        perror("head == 2");
-    }
-}
-
-// Select the next thread to schedule (round-robin)
-thread next(void) {
-    if (list.head == NULL) {
-        perror("head empty");
-        return NULL;
-    }
-    perror("head not empty");
-
-    // Track the current node in the list
-    static Node *current_node = NULL;
-
-    if (current_node == NULL) {
-        perror("current node empty, set to head: START");
-        current_node = list.head;
-        // list.tail = current_node;
-    } else {
-        current_node = current_node->next;
-        if (current_node == NULL) 
-        {
-            perror("current node empty, set to head: END1");
-            // list.tail->next = list.head;
-            // list.tail = list.head;
-            current_node = list.head;  // Reset to the head when reaching the end
-            // list.tail = current_node;
-        }
-    }
-
-    thread next_thread = current_node->data;
-
-    perror("leave next");
-
-    return next_thread;
-}
-
-// Get the number of threads in the queue
-int qlen(void) {
-    int count = 0;
-    Node* current = list.head;
-
-    while (current != NULL) {
-        count++;
         current = current->next;
+    }
+
+    // If victim found before end of list
+    if (current != NULL)
+    {
+        // If victim is head
+        if (current == head)
+        {
+            // If head is not only thread in list, update head
+            if (head->next != NULL)
+            {
+                head = head->next;
+                head->prev = NULL;
+            }
+            // If head is only thread in list, set head to NULL
+            else
+            {
+                head = NULL;
+            }
+        }
+        // If victim is tail, set the tail to the previous thread
+        else if (current == tail)
+        {
+            tail = current->prev;
+            tail->next = NULL;
+        }
+        // If victim is arbitrary thread between head and tail, link the previous and next nodes
+        else
+        {
+            // Set next of previous node to next of current node
+            current->prev->next = current->next;
+
+            // Set previous of next node to previous of current node
+            current->next->prev = current->prev;
+        }
+    }
+}
+
+thread next(){
+
+    thread return_thread = NULL;
+    
+    // If list isn't empty
+    if (head != NULL)
+    {
+        // Set return thread to head
+        return_thread = head;
+
+        // If head isn't only thread in list
+        if (head->next != NULL)
+        {
+            head = head->next;
+            head->prev = NULL;
+        }
+        // If head is only thread in list
+        else{
+            
+            head = NULL;
+        }
+    }
+
+    // Readmit the previous head to the back of the list
+    admit(return_thread);
+
+    return return_thread;
+}
+
+int qlen()
+{
+    int count = 0;
+    thread current = head;
+    while (current != NULL)
+    {
+        current = current->next;
+        count++;
     }
 
     return count;
 }
-
-// void print_scheduler(void) {
-//     printf("Num in queue: %d\n", qlen());
-//     printf("Scheduler Queue:\n");
-
-//     Node* current = list.head;
-//     while (current != NULL) {
-//         printf("Thread: %p\n", current->data);
-//         current = current->next;
-//     }
-// }
