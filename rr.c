@@ -85,15 +85,17 @@ thread next(){
             head = head->next;
             head->prev = NULL;
         }
-        // If head is only thread in list
-        else{
+        // // If head is only thread in list
+        // else{
             
-            head = NULL;
-        }
+        //     head = NULL;
+        // }
     }
-
-    // Readmit the previous head to the back of the list
-    admit(return_thread);
+    if (return_thread != NULL)
+    {
+        // Readmit the previous head to the back of the list
+        admit(return_thread);
+    }
 
     return return_thread;
 }

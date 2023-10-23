@@ -12,7 +12,9 @@ static tid_t thread_counter = NO_THREAD;
 static thread current_thread = NULL;
 static void* initial_stack = NULL;
 
-scheduler current_scheduler = {NULL, NULL, admit, remove, next, qlen};
+scheduler current_scheduler = NULL;
+// scheduler publish = NULL;
+//struct scheduler current_scheduler = {NULL, NULL, admit, remove, next, qlen};
 
 /*
 Creates a new thread and admits it to the current scheduler. The thread’s resources will consist of a
@@ -26,7 +28,9 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
     // // CHANGE?
     if (current_scheduler == NULL) 
     {
-        lwp_set_scheduler(NULL);
+        struct scheduler publish = {NULL, NULL, admit, remove, next, qlen};
+        current_scheduler = &publish;
+        // lwp_set_scheduler(NULL);
     }
     // perror("after scheduler");
 
@@ -165,27 +169,29 @@ extern void lwp_yield(void)
     } else if (current_thread->tid == 8) {
         write(1, "8", 1);
     }
-
-    if (next_thread->tid == -1) {
-        write(1, "-1", 2);
-    } else if (next_thread->tid == 0) {
-        write(1, "0", 1);
-    } else if (next_thread->tid == 1) {
-        write(1, "1", 1);
-    } else if (next_thread->tid == 2) {
-        write(1, "2", 1);
-    } else if (next_thread->tid == 3) {
-        write(1, "3", 1);
-    } else if (next_thread->tid == 4) {
-        write(1, "4", 1);
-    } else if (next_thread->tid == 5) {
-        write(1, "5", 1);
-    } else if (next_thread->tid == 6) {
-        write(1, "6", 1);
-    } else if (next_thread->tid == 7) {
-        write(1, "7", 1);
-    } else if (next_thread->tid == 8) {
-        write(1, "8", 1);
+    if (next_thread != NULL)
+    {
+        if (next_thread->tid == -1) {
+            write(1, "-1", 2);
+        } else if (next_thread->tid == 0) {
+            write(1, "0", 1);
+        } else if (next_thread->tid == 1) {
+            write(1, "1", 1);
+        } else if (next_thread->tid == 2) {
+            write(1, "2", 1);
+        } else if (next_thread->tid == 3) {
+            write(1, "3", 1);
+        } else if (next_thread->tid == 4) {
+            write(1, "4", 1);
+        } else if (next_thread->tid == 5) {
+            write(1, "5", 1);
+        } else if (next_thread->tid == 6) {
+            write(1, "6", 1);
+        } else if (next_thread->tid == 7) {
+            write(1, "7", 1);
+        } else if (next_thread->tid == 8) {
+            write(1, "8", 1);
+        }
     }
 
 
@@ -247,8 +253,8 @@ tid_t lwp_wait(int *status)
             term_tid = terminated_thread->tid; // Set the value of term_tid
 
             // Deallocate resources of the terminated thread
-            free(terminated_thread->stack);
-            free(terminated_thread);
+            // free(terminated_thread->stack);
+            // free(terminated_thread);
 
             return term_tid; // Return the tid of the terminated thread
         }
@@ -259,7 +265,8 @@ tid_t lwp_wait(int *status)
         current_scheduler->remove(current_thread);
 
         // Add the current thread to the waiting queue
-        waiting_threads[waiting_count++] = current_thread;
+        waiting_threads[waiting_count] = current_thread;
+        waiting_count++;
 
         // Yield to the next thread
         lwp_yield();
@@ -346,7 +353,7 @@ extern void lwp_set_scheduler(scheduler fun) {
     if (fun == NULL) {
         // Revert to round-robin scheduling
         struct scheduler publish = {NULL, NULL, admit, remove, next, qlen};
-        lwp_set_scheduler(&publish);
+        current_scheduler = &publish;
     } else {
         // Transfer threads from the old scheduler to the new one
         while (current_scheduler->qlen() > 0) {
