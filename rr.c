@@ -113,33 +113,33 @@ void remove(thread victim) {
     }
     perror("remove");
     if (victim == NULL || list.head == NULL) {
-        perror("empty");
-        return; // Do not rem NULL threads or from an empty queue
+        return; // Do not remove NULL threads or from an empty queue
     }
 
     if (list.head->data->tid == victim->tid) {
-        perror("remove head");
         Node* next_node = list.head->next;
+        if (list.head == list.tail) {
+            list.tail = next_node;
+        }
         free(list.head);
         list.head = next_node;
         if (list.head == NULL) {
             list.tail = NULL;
         }
     } else {
-        
-        perror("remove not head?s");
         Node* prev = list.head;
-        while (prev->next != NULL && prev->next->data != victim) {
+        while (prev->next != NULL && prev->next->data->tid != victim->tid) {
             prev = prev->next;
         }
         if (prev->next != NULL) {
             Node* removed = prev->next;
             prev->next = removed->next;
-            free(removed);
             if (removed == list.tail) {
-                list.tail = prev;
+                list.tail = prev; // Update the tail pointer
             }
+            free(removed);
         }
+
     }
         if(list.head->data->tid == 1)
     {
