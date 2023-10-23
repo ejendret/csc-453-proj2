@@ -105,4 +105,6 @@ int rr_qlen()
         current = current->next;
         count++;
     }
+
+    return count;
 }
