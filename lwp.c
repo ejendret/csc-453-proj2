@@ -23,7 +23,7 @@ loaded via swap_rfiles() it will run the given function. This may be called by a
 */
 extern tid_t lwp_create(lwpfun fun, void * arg)
 {
-    perror("create");
+    //perror("create");
     // // Check scheduler, should default to rr if null
     // // CHANGE?
     if (current_scheduler == NULL) 
@@ -109,7 +109,7 @@ extern tid_t lwp_create(lwpfun fun, void * arg)
 
 extern void lwp_start(void)
 {
-    perror("start");
+    //perror("start");
 
     //Initialize new thread struct for LWP
     thread new_thread = (thread)malloc(sizeof(context));
@@ -143,62 +143,62 @@ extern void lwp_start(void)
 
 extern void lwp_yield(void)
 {
-    perror("yield");
+    //perror("yield");
     // Get new thread to run
     thread next_thread = current_scheduler->next();
-    perror("yielded");
+    //perror("yielded");
     
-    if (current_thread->tid == -1) {
-        write(1, "-1", 2);
-    } else if (current_thread->tid == 0) {
-        write(1, "0", 1);
-    } else if (current_thread->tid == 1) {
-        write(1, "1", 1);
-    } else if (current_thread->tid == 2) {
-        write(1, "2", 1);
-    } else if (current_thread->tid == 3) {
-        write(1, "3", 1);
-    } else if (current_thread->tid == 4) {
-        write(1, "4", 1);
-    } else if (current_thread->tid == 5) {
-        write(1, "5", 1);
-    } else if (current_thread->tid == 6) {
-        write(1, "6", 1);
-    } else if (current_thread->tid == 7) {
-        write(1, "7", 1);
-    } else if (current_thread->tid == 8) {
-        write(1, "8", 1);
-    }
-    if (next_thread != NULL)
-    {
-        if (next_thread->tid == -1) {
-            write(1, "-1", 2);
-        } else if (next_thread->tid == 0) {
-            write(1, "0", 1);
-        } else if (next_thread->tid == 1) {
-            write(1, "1", 1);
-        } else if (next_thread->tid == 2) {
-            write(1, "2", 1);
-        } else if (next_thread->tid == 3) {
-            write(1, "3", 1);
-        } else if (next_thread->tid == 4) {
-            write(1, "4", 1);
-        } else if (next_thread->tid == 5) {
-            write(1, "5", 1);
-        } else if (next_thread->tid == 6) {
-            write(1, "6", 1);
-        } else if (next_thread->tid == 7) {
-            write(1, "7", 1);
-        } else if (next_thread->tid == 8) {
-            write(1, "8", 1);
-        }
-    }
+    // if (current_thread->tid == -1) {
+    //     write(1, "-1", 2);
+    // } else if (current_thread->tid == 0) {
+    //     write(1, "0", 1);
+    // } else if (current_thread->tid == 1) {
+    //     write(1, "1", 1);
+    // } else if (current_thread->tid == 2) {
+    //     write(1, "2", 1);
+    // } else if (current_thread->tid == 3) {
+    //     write(1, "3", 1);
+    // } else if (current_thread->tid == 4) {
+    //     write(1, "4", 1);
+    // } else if (current_thread->tid == 5) {
+    //     write(1, "5", 1);
+    // } else if (current_thread->tid == 6) {
+    //     write(1, "6", 1);
+    // } else if (current_thread->tid == 7) {
+    //     write(1, "7", 1);
+    // } else if (current_thread->tid == 8) {
+    //     write(1, "8", 1);
+    // }
+    // if (next_thread != NULL)
+    // {
+    //     if (next_thread->tid == -1) {
+    //         write(1, "-1", 2);
+    //     } else if (next_thread->tid == 0) {
+    //         write(1, "0", 1);
+    //     } else if (next_thread->tid == 1) {
+    //         write(1, "1", 1);
+    //     } else if (next_thread->tid == 2) {
+    //         write(1, "2", 1);
+    //     } else if (next_thread->tid == 3) {
+    //         write(1, "3", 1);
+    //     } else if (next_thread->tid == 4) {
+    //         write(1, "4", 1);
+    //     } else if (next_thread->tid == 5) {
+    //         write(1, "5", 1);
+    //     } else if (next_thread->tid == 6) {
+    //         write(1, "6", 1);
+    //     } else if (next_thread->tid == 7) {
+    //         write(1, "7", 1);
+    //     } else if (next_thread->tid == 8) {
+    //         write(1, "8", 1);
+    //     }
+    // }
 
 
     // If there is no new thread to run, exit with exit status
     if (next_thread == NULL)
     {
-        perror("done");
+        //perror("done");
         // Get exit status and clean up
         unsigned int exit_status = current_thread->status;
         
@@ -216,14 +216,14 @@ extern void lwp_yield(void)
     }
 
     // Context switch
-    perror("swap");
+    //perror("swap");
 
     rfile *temp_thread = &current_thread->state;
     current_thread = next_thread;
 
     swap_rfiles(temp_thread, &current_thread->state);
     
-    perror("swapped");
+    //perror("swapped");
 }
 
 tid_t lwp_wait(int *status)
