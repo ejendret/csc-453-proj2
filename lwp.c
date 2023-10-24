@@ -248,7 +248,7 @@ tid_t lwp_wait(int *status)
         {
             if (status != NULL) {
                 // If a status pointer is provided, set its value
-                *status = (terminated_thread->status >> 8) & 0xFF;
+                *status = (terminated_thread->status);
             }
 
             term_tid = terminated_thread->tid; // Set the value of term_tid
@@ -278,6 +278,11 @@ tid_t lwp_wait(int *status)
             // The current thread was previously in the waiting queue and has an associated exited thread
             thread exited_thread = current_thread->exited;
             tid_t exited_tid = exited_thread->tid;
+
+            if (exited_thread->status != NULL) {
+                // If a status pointer is provided, set its value
+                *status = (exited_thread->status);
+            }
 
             // Remove the current thread from the scheduler
             current_scheduler->remove(current_thread);
@@ -397,4 +402,4 @@ extern thread tid2thread(tid_t tid)
 //  git add .
 //  git commit -m "with rr2"
 //  git checkout -b luc
-//  git push origin luc
+//  git push origin luc2
