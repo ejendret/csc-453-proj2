@@ -1,0 +1,3 @@
+Luc Garcia-Oleary & Emory Jendretzke
+No special instructions
+Program will not run in Valgrind, though leaked memory is still reachable, not lost. If it weren't for the valgrind segfault, memory would not be leaked.
