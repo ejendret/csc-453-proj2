@@ -28,7 +28,7 @@ allclean: clean
 	@rm -f $(EXTRACLEAN)
 
 clean:	
-	rm -f hungry nums snakes *.o $(OBJS) *~ TAGS
+	rm -f hungry nums snakes libLWP.a *.o $(OBJS) *~ TAGS
 
 snakes: randomsnakes.o libLWP.a libsnakes.a
 	$(LD) $(LDFLAGS) -o snakes randomsnakes.o -L. -lncurses -lsnakes -lLWP
