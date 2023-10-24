@@ -2,6 +2,7 @@
 #include "rr.h"
 #include "schedulers.h"
 #define MAX_THREADS 100 // Define a maximum number of threads
+#define DEFAULT_STACK_SIZE 8388608 // 8MB stack size, assuming MB is 1024^2
 
 static thread terminated_threads[MAX_THREADS];
 static thread waiting_threads[MAX_THREADS];
@@ -25,15 +26,12 @@ tid_t lwp_create(lwpfun fun, void * arg)
         struct scheduler publish = {NULL, NULL, admit, remove, next, qlen};
         RoundRobin = &publish;
     }
+
     // // Check scheduler, should default to rr if null
-    // // CHANGE?
     if (current_scheduler == NULL) 
     {
-        // struct scheduler publish = {NULL, NULL, admit, remove, next, qlen};
-        // current_scheduler = &publish;
         lwp_set_scheduler(NULL);
     }
-    // perror("after scheduler");
 
     //Initialize new thread struct for LWP
     thread new_thread = (thread)malloc(sizeof(context));
@@ -48,7 +46,6 @@ tid_t lwp_create(lwpfun fun, void * arg)
     if (mempagesize == -1) 
     {
         //perror("sysconf");
-        // CHANGE?
         free(new_thread);
         return NO_THREAD;
     }
@@ -76,7 +73,8 @@ tid_t lwp_create(lwpfun fun, void * arg)
     // Allocate and initialize the stack for the new LWP using mmap
     // mmap(2) returns a pointer to the memory region on success or MAP_FAILED on failure.
     new_thread->stack = mmap(NULL, howbig, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
-    if (new_thread->stack == MAP_FAILED) {
+    if (new_thread->stack == MAP_FAILED) 
+    {
         //perror("mmap");
         free(new_thread);
         return NO_THREAD;
@@ -99,21 +97,16 @@ tid_t lwp_create(lwpfun fun, void * arg)
     new_thread->stack[new_thread->stacksize - 1] = (unsigned long)lwp_wrap;
     new_thread->stack[new_thread->stacksize - 2] = new_thread->state.rbp;
 
-    // printf("before admit call\n");
     // Admit the new LWP to the scheduler
     all_threads[((new_thread->tid)-1)] = new_thread;
     all_count++;
     current_scheduler->admit(new_thread);
-
-    // printf("after admit call\n");
 
     return new_thread->tid;
 }
 
 void lwp_start(void)
 {
-    //perror("start");
-
     //Initialize new thread struct for LWP
     thread new_thread = (thread)malloc(sizeof(context));
     if (new_thread == NULL)
@@ -126,84 +119,27 @@ void lwp_start(void)
     thread_counter++;
     new_thread->tid = thread_counter;
     new_thread->stack = NULL;
-    // new_thread->state = NULL;
     new_thread->status = LWP_LIVE;
     current_thread = new_thread;
 
     all_threads[((current_thread->tid)-1)] = current_thread;
     all_count++;
+
     // Admit to scheduler
     current_scheduler->admit(current_thread);
-    // swap_rfiles(&current_thread->state, NULL);
 
     // Yield to next thread
     lwp_yield();
 }
-// extern tid_t lwp_wait(int * tid)
-// {
-//     perror("wait");
-//     return -1;
-// }
-
 
 void lwp_yield(void)
 {
-    //perror("yield");
     // Get new thread to run
     thread next_thread = current_scheduler->next();
-    //perror("yielded");
-    
-    // if (current_thread->tid == -1) {
-    //     write(1, "-1", 2);
-    // } else if (current_thread->tid == 0) {
-    //     write(1, "0", 1);
-    // } else if (current_thread->tid == 1) {
-    //     write(1, "1", 1);
-    // } else if (current_thread->tid == 2) {
-    //     write(1, "2", 1);
-    // } else if (current_thread->tid == 3) {
-    //     write(1, "3", 1);
-    // } else if (current_thread->tid == 4) {
-    //     write(1, "4", 1);
-    // } else if (current_thread->tid == 5) {
-    //     write(1, "5", 1);
-    // } else if (current_thread->tid == 6) {
-    //     write(1, "6", 1);
-    // } else if (current_thread->tid == 7) {
-    //     write(1, "7", 1);
-    // } else if (current_thread->tid == 8) {
-    //     write(1, "8", 1);
-    // }
-    // if (next_thread != NULL)
-    // {
-    //     if (next_thread->tid == -1) {
-    //         write(1, "-1", 2);
-    //     } else if (next_thread->tid == 0) {
-    //         write(1, "0", 1);
-    //     } else if (next_thread->tid == 1) {
-    //         write(1, "1", 1);
-    //     } else if (next_thread->tid == 2) {
-    //         write(1, "2", 1);
-    //     } else if (next_thread->tid == 3) {
-    //         write(1, "3", 1);
-    //     } else if (next_thread->tid == 4) {
-    //         write(1, "4", 1);
-    //     } else if (next_thread->tid == 5) {
-    //         write(1, "5", 1);
-    //     } else if (next_thread->tid == 6) {
-    //         write(1, "6", 1);
-    //     } else if (next_thread->tid == 7) {
-    //         write(1, "7", 1);
-    //     } else if (next_thread->tid == 8) {
-    //         write(1, "8", 1);
-    //     }
-    // }
-
 
     // If there is no new thread to run, exit with exit status
     if (next_thread == NULL)
     {
-        // perror("done");
         // Get exit status and clean up
         unsigned int exit_status = current_thread->status;
         
@@ -220,27 +156,24 @@ void lwp_yield(void)
         exit(exit_status);
     }
 
-    // Context switch
-    //perror("swap");
-
     rfile *temp_thread = &current_thread->state;
     current_thread = next_thread;
 
     swap_rfiles(temp_thread, &current_thread->state);
     
-    //perror("swapped");
 }
 
 tid_t lwp_wait(int *status)
 {
-    //perror("wait");
     // If there are terminated threads, return the oldest one
     if (terminated_count > 0) 
     {
         // There are terminated threads, grab one
         thread terminated_thread = NULL;
-        for (int i = 0; i < terminated_count; i++) {
-            if (terminated_threads[i] != NULL) {
+        for (int i = 0; i < terminated_count; i++) 
+        {
+            if (terminated_threads[i] != NULL) 
+            {
                 terminated_thread = terminated_threads[i];
                 terminated_threads[i] = NULL; // Remove the thread from the queue
                 break; // Exit the loop after finding the first non-NULL thread
@@ -251,7 +184,8 @@ tid_t lwp_wait(int *status)
 
         if (terminated_thread != NULL) 
         {
-            if (status != NULL) {
+            if (status != NULL) 
+            {
                 // If a status pointer is provided, set its value
                 *status = (terminated_thread->status);
             }
@@ -259,7 +193,8 @@ tid_t lwp_wait(int *status)
             term_tid = terminated_thread->tid; // Set the value of term_tid
 
             // Deallocate the stack memory for the exited_thread
-            if (terminated_thread->stack != NULL) {
+            if (terminated_thread->stack != NULL) 
+            {
                 munmap(terminated_thread->stack, terminated_thread->stacksize * sizeof(unsigned long));
             }
             free(terminated_thread);
@@ -269,58 +204,42 @@ tid_t lwp_wait(int *status)
     } 
     else
     {
-        //perror("1");
         // No terminated threads, block the current thread by removing it from the scheduler
         current_scheduler->remove(current_thread);
-        //perror("2");
+
         // Add the current thread to the waiting queue
         waiting_threads[waiting_count] = current_thread;
         waiting_count++;
-        //perror("3");
 
         // Yield to the next thread
         lwp_yield();
-        //perror("4");
 
         // Check if the current thread has an associated exited thread after yielding
         if (current_thread->exited != NULL) 
         {
-            //perror("5");
             // The current thread was previously in the waiting queue and has an associated exited thread
             thread exited_thread = current_thread->exited;
-            //perror("6");
-            tid_t exited_tid = exited_thread->tid;
-            //perror("7");
 
-            if (status != NULL) {
+            tid_t exited_tid = exited_thread->tid;
+
+            if (status != NULL) 
+            {
                 // If a status pointer is provided, set its value
                 *status = (exited_thread->status);
             }
-            //perror("8");
-
-            // // Remove the current thread from the scheduler
-            // current_scheduler->remove(current_thread);
 
             // Set the current thread's exited field to NULL
             current_thread->exited = NULL;
-            //perror("9");
 
             // Deallocate the stack memory for the exited_thread
-            if (exited_thread->stack != NULL) {
+            if (exited_thread->stack != NULL) 
+            {
                 munmap(exited_thread->stack, exited_thread->stacksize * sizeof(unsigned long));
             }
             free(exited_thread);
-            //perror("10");
-
-            // if (current_thread->stack != NULL) {
-            //     munmap(current_thread->stack, current_thread->stacksize * sizeof(unsigned long));
-            // }
-            // free(current_thread);
 
             return exited_tid;
         }
-
-        // /10) Main thread is back and resumed where it was in lwp_wait, it checks it's exited field and sees it is not null, it removes that thread from the scheduler and returns its TID so lwp_wait returns.
 
     }
 
@@ -330,8 +249,6 @@ tid_t lwp_wait(int *status)
 
 void lwp_exit(int status) 
 {
-    //perror("exit");
-
     // Update the status of the current thread
     current_thread->status = MKTERMSTAT(LWP_TERM, status);
 
@@ -340,15 +257,18 @@ void lwp_exit(int status)
     {
         thread waiting_thread = NULL;
         // There are waiting threads, grab one
-        for (int i = 0; i < waiting_count; i++) {
-            if (waiting_threads[i] != NULL) {
+        for (int i = 0; i < waiting_count; i++) 
+        {
+            if (waiting_threads[i] != NULL) 
+            {
                 waiting_thread = waiting_threads[i];
                 waiting_threads[i] = NULL; // Remove the thread from the queue
                 break; // Exit the loop after finding the first non-NULL thread
             }
         }
 
-        if (waiting_thread != NULL) {
+        if (waiting_thread != NULL) 
+        {
             // If a waiting thread exists, associate it with the exiting thread
             waiting_thread->exited = current_thread;
 
@@ -386,23 +306,28 @@ void lwp_wrap(lwpfun fun, void *arg)
     lwp_exit(rval);
 }
 
-void lwp_set_scheduler(scheduler fun) {
+void lwp_set_scheduler(scheduler fun) 
+{
     if (RoundRobin == NULL)
     {
         struct scheduler publish = {NULL, NULL, admit, remove, next, qlen};
         RoundRobin = &publish;
     }
-    if (fun == NULL) {
+    if (fun == NULL) 
+    {
         // Revert to round-robin scheduling
         current_scheduler = RoundRobin;
-    } else {
+    } 
+    else 
+    {
         //init new scheduler
         if (current_scheduler->init != NULL)
         {
             current_scheduler->init();
         }
         // Transfer threads from the old scheduler to the new one
-        while (current_scheduler->qlen() > 0) {
+        while (current_scheduler->qlen() > 0) 
+        {
             thread t = current_scheduler->next();
             fun->admit(t);
         }
@@ -426,7 +351,8 @@ thread tid2thread(tid_t tid)
 {
     for (int i = 0; i < all_count; i++) 
     {
-        if ((all_threads[i] != NULL) && (all_threads[i]->tid == tid)) {
+        if ((all_threads[i] != NULL) && (all_threads[i]->tid == tid)) 
+        {
             return all_threads[i];  // Found the thread with the matching tid
         }
     }
@@ -434,9 +360,3 @@ thread tid2thread(tid_t tid)
     // If no thread with the given tid is found, return NULL
     return NO_THREAD;
 }
-
-
-//  git add .
-//  git commit -m "with rr2"
-//  git checkout -b luc
-//  git push origin luc2

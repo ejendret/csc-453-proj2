@@ -24,7 +24,8 @@ void admit(thread new)
     }
 }
 
-void remove(thread victim){
+void remove(thread victim)
+{
     // perror("A");
     thread current = head;
     // perror("B");
@@ -75,7 +76,8 @@ void remove(thread victim){
     }
 }
 
-thread next(){
+thread next()
+{
 
     thread return_thread = NULL;
     

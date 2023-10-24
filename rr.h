@@ -10,6 +10,4 @@ void remove(thread victim);
 thread next(void);
 int qlen(void);
 
-// void print_scheduler(void);
-
 #endif
