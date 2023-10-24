@@ -25,41 +25,47 @@ void admit(thread new)
 }
 
 void remove(thread victim){
+    // perror("A");
     thread current = head;
-
+    // perror("B");
     // Loop until end of list or victim found
     while (current != NULL && current != victim)
     {
         current = current->next;
     }
-
+    //perror("C");
     // If victim found before end of list
     if (current != NULL)
     {
+        //perror("D");
         // If victim is head
         if (current == head)
         {
             // If head is not only thread in list, update head
             if (head->next != NULL)
             {
+                //perror("E");
                 head = head->next;
                 head->prev = NULL;
             }
             // If head is only thread in list, set head to NULL
             else
             {
+                //perror("F");
                 head = NULL;
             }
         }
         // If victim is tail, set the tail to the previous thread
         else if (current == tail)
         {
+            //perror("G");
             tail = current->prev;
             tail->next = NULL;
         }
         // If victim is arbitrary thread between head and tail, link the previous and next nodes
         else
         {
+            //perror("H");
             // Set next of previous node to next of current node
             current->prev->next = current->next;
 

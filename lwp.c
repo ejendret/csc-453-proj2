@@ -39,7 +39,7 @@ tid_t lwp_create(lwpfun fun, void * arg)
     thread new_thread = (thread)malloc(sizeof(context));
     if (new_thread == NULL) 
     {
-        perror("malloc");
+        //perror("malloc");
         return NO_THREAD;
     }
 
@@ -47,7 +47,7 @@ tid_t lwp_create(lwpfun fun, void * arg)
     long mempagesize = sysconf(_SC_PAGE_SIZE);
     if (mempagesize == -1) 
     {
-        perror("sysconf");
+        //perror("sysconf");
         // CHANGE?
         free(new_thread);
         return NO_THREAD;
@@ -77,7 +77,7 @@ tid_t lwp_create(lwpfun fun, void * arg)
     // mmap(2) returns a pointer to the memory region on success or MAP_FAILED on failure.
     new_thread->stack = mmap(NULL, howbig, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
     if (new_thread->stack == MAP_FAILED) {
-        perror("mmap");
+        //perror("mmap");
         free(new_thread);
         return NO_THREAD;
     }
@@ -118,7 +118,7 @@ void lwp_start(void)
     thread new_thread = (thread)malloc(sizeof(context));
     if (new_thread == NULL)
     {
-        perror("malloc");
+        //perror("malloc");
         exit(EXIT_FAILURE);
     }
 
@@ -258,10 +258,6 @@ tid_t lwp_wait(int *status)
 
             term_tid = terminated_thread->tid; // Set the value of term_tid
 
-            // // Deallocate resources of the terminated thread
-            // free(terminated_thread->stack);
-            // free(terminated_thread);
-
             // Deallocate the stack memory for the exited_thread
             if (terminated_thread->stack != NULL) {
                 munmap(terminated_thread->stack, terminated_thread->stacksize * sizeof(unsigned long));
@@ -273,39 +269,48 @@ tid_t lwp_wait(int *status)
     } 
     else
     {
+        //perror("1");
         // No terminated threads, block the current thread by removing it from the scheduler
         current_scheduler->remove(current_thread);
-
+        //perror("2");
         // Add the current thread to the waiting queue
         waiting_threads[waiting_count] = current_thread;
         waiting_count++;
+        //perror("3");
 
         // Yield to the next thread
         lwp_yield();
+        //perror("4");
 
         // Check if the current thread has an associated exited thread after yielding
         if (current_thread->exited != NULL) 
         {
+            //perror("5");
             // The current thread was previously in the waiting queue and has an associated exited thread
             thread exited_thread = current_thread->exited;
+            //perror("6");
             tid_t exited_tid = exited_thread->tid;
+            //perror("7");
 
             if (status != NULL) {
                 // If a status pointer is provided, set its value
                 *status = (exited_thread->status);
             }
+            //perror("8");
 
             // // Remove the current thread from the scheduler
             // current_scheduler->remove(current_thread);
 
             // Set the current thread's exited field to NULL
             current_thread->exited = NULL;
+            //perror("9");
 
             // Deallocate the stack memory for the exited_thread
             if (exited_thread->stack != NULL) {
                 munmap(exited_thread->stack, exited_thread->stacksize * sizeof(unsigned long));
             }
             free(exited_thread);
+            //perror("10");
 
             // if (current_thread->stack != NULL) {
             //     munmap(current_thread->stack, current_thread->stacksize * sizeof(unsigned long));
@@ -391,13 +396,20 @@ void lwp_set_scheduler(scheduler fun) {
         // Revert to round-robin scheduling
         current_scheduler = RoundRobin;
     } else {
-        // Transfer threads from the old scheduler to the new one
-        if(current_scheduler != NULL)
+        //init new scheduler
+        if (current_scheduler->init != NULL)
         {
-            while (current_scheduler->qlen() > 0) {
-                thread t = current_scheduler->next();
-                fun->admit(t);
-            }
+            current_scheduler->init();
+        }
+        // Transfer threads from the old scheduler to the new one
+        while (current_scheduler->qlen() > 0) {
+            thread t = current_scheduler->next();
+            fun->admit(t);
+        }
+        //clear current scheduler
+        if (current_scheduler->shutdown != NULL)
+        {
+            current_scheduler->shutdown();
         }
 
         // Set the new scheduler as the current scheduler

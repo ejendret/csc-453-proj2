@@ -50,7 +50,7 @@
 static void indentnum(void *num);
 
 int main(int argc, char *argv[]){
-  long i;
+  long i = 0;
 
   // lwp_set_scheduler(NULL);
 
