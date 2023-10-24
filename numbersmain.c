@@ -52,6 +52,8 @@ static void indentnum(void *num);
 int main(int argc, char *argv[]){
   long i;
 
+  // lwp_set_scheduler(NULL);
+
   printf("Launching LWPS\n");
 
   /* spawn a number of individual LWPs */
