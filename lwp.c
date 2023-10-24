@@ -228,6 +228,7 @@ extern void lwp_yield(void)
 
 tid_t lwp_wait(int *status)
 {
+    //perror("wait");
     // If there are terminated threads, return the oldest one
     if (terminated_count > 0) 
     {
@@ -297,15 +298,10 @@ tid_t lwp_wait(int *status)
 
 extern void lwp_exit(int status) 
 {
+    //perror("exit");
+
     // Update the status of the current thread
     current_thread->status = MKTERMSTAT(LWP_TERM, status);
-
-    // Remove the current thread from the scheduler
-    current_scheduler->remove(current_thread);
-
-    //Add the current thread to the terminated threads queue
-    terminated_threads[terminated_count] = current_thread;
-    terminated_count++;
 
     // Check if there are threads waiting for an exit
     if (waiting_count > 0) 
@@ -327,7 +323,16 @@ extern void lwp_exit(int status)
             // Re-admit the waiting thread to the scheduler
             current_scheduler->admit(waiting_thread);
         }
+        else
+        {
+            //Add the current thread to the terminated threads queue
+            terminated_threads[terminated_count] = current_thread;
+            terminated_count++;
+        }
     }
+
+    // Remove the current thread from the scheduler
+    current_scheduler->remove(current_thread);
 
     // Yield to the next thread
     lwp_yield();
